@@ -3,6 +3,7 @@ package controller;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.concurrent.Task;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -19,6 +20,7 @@ import model.Item;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
@@ -64,6 +66,7 @@ public class DashboardController implements Initializable {
     private int currentPage = 1;
     private String currentFilter = "All";
     private String searchQuery = "";
+    private List<Item> cachedItems = new ArrayList<>();
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
@@ -95,6 +98,8 @@ public class DashboardController implements Initializable {
             filterCombo.getItems().setAll("Unclaimed");
             filterCombo.setValue("Unclaimed");
             currentFilter = "Unclaimed";
+            filterCombo.setVisible(false);
+            filterCombo.setManaged(false);
             addButton.setVisible(false);
             addButton.setManaged(false);
             menuButton.setVisible(false);
@@ -103,7 +108,7 @@ public class DashboardController implements Initializable {
 
         scrollPane.viewportBoundsProperty().addListener(
                 (obs, oldBounds, bounds) -> itemGrid.setPrefWrapLength(Math.max(360, bounds.getWidth() - 16)));
-        renderGrid();
+        refreshItems();
     }
 
     @FXML
@@ -130,10 +135,6 @@ public class DashboardController implements Initializable {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ReportForm.fxml"));
             Parent root = loader.load();
-            ReportFormController ctrl = loader.getController();
-            ctrl.setOnItemSaved(item -> {
-                renderGrid();
-            });
             Stage stage = (Stage) searchField.getScene().getWindow();
             SceneUtil.setScene(stage, root);
             stage.setTitle("New Post – PUPSRC Lost and Found");
@@ -252,26 +253,45 @@ public class DashboardController implements Initializable {
     }
 
     private void goPage(int p) {
-        int pages = (int) Math.ceil((double) getFilteredItems().size() / ITEMS_PER_PAGE);
+        int pages = Math.max(1, (int) Math.ceil((double) getFilteredItems().size() / ITEMS_PER_PAGE));
         if (p < 1 || p > pages)
             return;
         currentPage = p;
         renderGrid();
     }
 
-    private List<Item> getDatabaseItems() {
+    private void refreshItems() {
+        itemGrid.getChildren().setAll(new Label("Loading items..."));
+        paginationBox.getChildren().clear();
+
+        Task<List<Item>> task = new Task<>() {
+            @Override
+            protected List<Item> call() {
+                return loadDatabaseItems();
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            cachedItems = task.getValue();
+            currentPage = 1;
+            renderGrid();
+        });
+        task.setOnFailed(event -> {
+            cachedItems = List.of();
+            itemGrid.getChildren().setAll(new Label("Unable to load items."));
+        });
+
+        Thread loaderThread = new Thread(task, "dashboard-item-loader");
+        loaderThread.setDaemon(true);
+        loaderThread.start();
+    }
+
+    private List<Item> loadDatabaseItems() {
 
         List<Item> items = new java.util.ArrayList<>();
 
-        for (ItemReport report : itemService.getPendingItems()) {
+        for (ItemReport report : itemService.getVisibleItems(SessionManager.getInstance().isAdmin())) {
             items.add(ItemMapper.toItem(report));
-        }
-
-        if (SessionManager.getInstance().isAdmin()) {
-
-            for (ItemReport report : itemService.getClaimedItems()) {
-                items.add(ItemMapper.toItem(report));
-            }
         }
 
         return items;
@@ -279,7 +299,7 @@ public class DashboardController implements Initializable {
 
     private List<Item> getFilteredItems() {
 
-        return getDatabaseItems().stream()
+        return cachedItems.stream()
 
                 .filter(i -> SessionManager.getInstance().isAdmin()
                         || i.getStatus() == Item.Status.LOST)
@@ -297,11 +317,15 @@ public class DashboardController implements Initializable {
 
                 .filter(i ->
                         searchQuery.isEmpty()
-                                || i.getName().toLowerCase().contains(searchQuery)
-                                || i.getLocation().toLowerCase().contains(searchQuery)
-                                || i.getColor().toLowerCase().contains(searchQuery))
+                                || containsIgnoreCase(i.getName(), searchQuery)
+                                || containsIgnoreCase(i.getLocation(), searchQuery)
+                                || containsIgnoreCase(i.getColor(), searchQuery))
 
                 .collect(Collectors.toList());
+    }
+
+    private boolean containsIgnoreCase(String value, String query) {
+        return value != null && value.toLowerCase().contains(query);
     }
 
     private void showAlert(String title, String msg) {

@@ -7,6 +7,7 @@ import javafx.stage.Stage;
 /**
  * Main entry point — opens the Login screen first.
  */
+
 public class App extends Application {
 
     @Override

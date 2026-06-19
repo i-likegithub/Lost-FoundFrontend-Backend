@@ -20,11 +20,6 @@
                 <Label text="Create Admin Account" styleClass="admin-login-title" alignment="CENTER"
                     maxWidth="Infinity" />
                 <VBox spacing="5">
-                    <Label text="Full Name *" styleClass="form-label" />
-                    <TextField fx:id="fullNameField" promptText="Surname, First Name"
-                        styleClass="form-input" />
-                </VBox>
-                <VBox spacing="5">
                     <Label text="Username *" styleClass="form-label" />
                     <TextField fx:id="usernameField" promptText="Enter username"
                         styleClass="form-input" />

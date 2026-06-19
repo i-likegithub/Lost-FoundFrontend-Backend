@@ -30,7 +30,7 @@
 
             <Region HBox.hgrow="ALWAYS" />
 
-            <Button fx:id="addButton" onAction="#onAddItem" styleClass="navbar-icon-btn" text="+">
+            <Button fx:id="addButton" onAction="#onAddItem" styleClass="navbar-icon-btn" text="">
             <graphic>
                <ImageView fx:id="reportFormIcon" fitHeight="18" fitWidth="18" preserveRatio="true">
                   <image>

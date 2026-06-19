@@ -1,5 +1,6 @@
 package controller;
 
+import com.campuslf.models.Admin;
 import com.campuslf.service.AuthenticationService;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -59,14 +60,19 @@ public class AdminLoginController implements Initializable {
             return;
         }
 
-        if (!authenticationService.login(user, pass)) {
+        Admin admin = authenticationService.authenticate(user, pass);
+
+        if (admin == null) {
             errorLabel.setText("Invalid username or password.");
             passwordField.clear();
             return;
         }
 
         // Set session — admin can now access the system freely
-        SessionManager.getInstance().login(SessionManager.Role.ADMIN, user);
+        SessionManager.getInstance().login(
+                SessionManager.Role.ADMIN,
+                user,
+                admin != null ? admin.getAdminId() : 0);
         navigateToDashboard();
     }
 

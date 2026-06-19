@@ -6,8 +6,12 @@ import com.campuslf.models.ItemReport;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ItemReportDAO {
+
+    private static final Logger LOGGER = Logger.getLogger(ItemReportDAO.class.getName());
 
     // INSERT
     public boolean addItemReport(ItemReport report) {
@@ -41,7 +45,7 @@ public class ItemReportDAO {
             }
             return false;
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Failed to add item report", e);
             return false;
         }
     }
@@ -49,10 +53,16 @@ public class ItemReportDAO {
     // READ all items (optional filter by status)
     public List<ItemReport> getAllItemReports(String statusFilter) {
         List<ItemReport> list = new ArrayList<>();
-        String sql = "SELECT * FROM item_reports";
+        String sql = """
+                SELECT report_id, admin_id, category_id, name, description, location_found,
+                       date_reported, date_posted, finder_student_id, finder_contact_num,
+                       image_url, status
+                FROM item_reports
+                """;
         if (statusFilter != null && !statusFilter.isEmpty()) {
             sql += " WHERE status = CAST(? AS report_status)";
         }
+        sql += " ORDER BY date_posted DESC, report_id DESC";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -67,14 +77,20 @@ public class ItemReportDAO {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Failed to load item reports", e);
         }
         return list;
     }
 
     // READ single item by ID
     public ItemReport getItemReportById(int reportId) {
-        String sql = "SELECT * FROM item_reports WHERE report_id = ?";
+        String sql = """
+                SELECT report_id, admin_id, category_id, name, description, location_found,
+                       date_reported, date_posted, finder_student_id, finder_contact_num,
+                       image_url, status
+                FROM item_reports
+                WHERE report_id = ?
+                """;
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
@@ -85,7 +101,7 @@ public class ItemReportDAO {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Failed to load item report " + reportId, e);
         }
         return null;
     }
@@ -100,7 +116,7 @@ public class ItemReportDAO {
             pstmt.setInt(2, reportId);
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Failed to update item report status", e);
             return false;
         }
     }
@@ -114,7 +130,7 @@ public class ItemReportDAO {
             pstmt.setInt(1, reportId);
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Failed to delete item report", e);
             return false;
         }
     }

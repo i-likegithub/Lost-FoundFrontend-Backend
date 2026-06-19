@@ -20,11 +20,9 @@ import java.time.LocalDate;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.function.Consumer;
 
 /**
  * ReportFormController
@@ -33,6 +31,12 @@ import java.util.function.Consumer;
  * to public dashboard as LOST.
  */
 public class ReportFormController implements Initializable {
+
+    private static final int MAX_ITEM_NAME_LENGTH = 60;
+    private static final int MAX_DESCRIPTION_LENGTH = 500;
+    private static final String NAME_PATTERN = "[A-Za-z .,]+";
+    private static final String STUDENT_ID_PATTERN = "\\d{4}-\\d{5}-SR-0";
+    private static final String CONTACT_PATTERN = "09\\d{2}-\\d{3}-\\d{4}";
 
     @FXML
     private ImageView logoImage;
@@ -66,30 +70,20 @@ public class ReportFormController implements Initializable {
     private Label errorLabel;
 
     private final ItemService itemService = new ItemService();
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MM/dd/yyyy");
     private final List<File> uploadedImages = new ArrayList<>();
-    private Consumer<ItemReport> onItemSaved;
     private NavbarHelper navbar;
 
     private int getCategoryId(String category) {
+        category = category.toUpperCase();
 
-        switch (category) {
+        return switch (category) {
+            case "ELECTRONICS" -> 1;
+            case "BAGS & WALLETS" -> 2;
+            case "IDS & DOCUMENTS" -> 3;
+            case "CLOTHING" -> 4;
+            default -> 5;
+        };
 
-            case "Electronics":
-                return 1;
-
-            case "Bags & Wallets":
-                return 2;
-
-            case "IDs & Documents":
-                return 3;
-
-            case "Clothing":
-                return 4;
-
-            default:
-                return 5; // Others
-        }
     }
 
     @Override
@@ -110,10 +104,6 @@ public class ReportFormController implements Initializable {
                 "Bags & Wallets", "Electronics", "IDs & Documents",
                 "Clothing", "School Supplies", "Keys", "Accessories", "Others");
         navbar = new NavbarHelper(() -> (Stage) itemNameField.getScene().getWindow());
-    }
-
-    public void setOnItemSaved(Consumer<ItemReport> callback) {
-        this.onItemSaved = callback;
     }
 
     @FXML
@@ -166,27 +156,54 @@ public class ReportFormController implements Initializable {
     @FXML
     private void onSaveReport() {
         errorLabel.setText("");
-        if (itemNameField.getText().isBlank()) {
+        String itemName = itemNameField.getText().trim();
+        String description = descriptionArea.getText().trim();
+        String reporterName = reporterNameField.getText().trim();
+        String studentId = studentIdField.getText().trim();
+        String contactNumber = contactField.getText().trim();
+        String location = locationField.getText().trim();
+
+        if (itemName.isBlank()) {
             errorLabel.setText("Item name is required.");
+            return;
+        }
+        if (itemName.length() > MAX_ITEM_NAME_LENGTH) {
+            errorLabel.setText("Item name must not exceed " + MAX_ITEM_NAME_LENGTH + " characters.");
             return;
         }
         if (categoryCombo.getValue() == null) {
             errorLabel.setText("Please select a category.");
             return;
         }
-        if (descriptionArea.getText().isBlank()) {
+        if (description.isBlank()) {
             errorLabel.setText("Description is required.");
             return;
         }
-        if (reporterNameField.getText().isBlank()) {
+        if (description.length() > MAX_DESCRIPTION_LENGTH) {
+            errorLabel.setText("Description must not exceed " + MAX_DESCRIPTION_LENGTH + " characters.");
+            return;
+        }
+        if (reporterName.isBlank()) {
             errorLabel.setText("Reporter name is required.");
             return;
         }
-        if (contactField.getText().isBlank()) {
+        if (!isValidName(reporterName)) {
+            errorLabel.setText("Name can only contain letters, spaces, comma, and period.");
+            return;
+        }
+        if (!studentId.isBlank() && !isValidStudentId(studentId)) {
+            errorLabel.setText("Student ID must follow this format: 2023-00123-SR-0");
+            return;
+        }
+        if (contactNumber.isBlank()) {
             errorLabel.setText("Contact number is required.");
             return;
         }
-        if (locationField.getText().isBlank()) {
+        if (!isValidContactNumber(contactNumber)) {
+            errorLabel.setText("Contact number must follow this format: 09XX-XXX-XXXX");
+            return;
+        }
+        if (location.isBlank()) {
             errorLabel.setText("Location is required.");
             return;
         }
@@ -202,17 +219,21 @@ public class ReportFormController implements Initializable {
 
         ItemReport report = new ItemReport();
 
+        report.setAdminId(Math.max(1, SessionManager.getInstance().getAdminId()));
+
         report.setCategoryId(
                 getCategoryId(categoryCombo.getValue()));
 
         report.setItemName(
-                itemNameField.getText().trim());
+                itemName);
 
         report.setDescription(
-                descriptionArea.getText().trim());
+                "Finder: " + reporterName
+                        + System.lineSeparator()
+                        + description);
 
         report.setLocationFound(
-                locationField.getText().trim());
+                location);
 
         report.setDateReported(
                 dateFoundPicker.getValue());
@@ -221,10 +242,10 @@ public class ReportFormController implements Initializable {
                 LocalDate.now());
 
         report.setFinderStudentId(
-                studentIdField.getText().trim());
+                studentId);
 
         report.setFinderContactNum(
-                contactField.getText().trim());
+                contactNumber);
 
         report.setImageUrl(
                 imagePath);
@@ -242,12 +263,8 @@ public class ReportFormController implements Initializable {
             return;
         }
 
-        if (onItemSaved != null) {
-            onItemSaved.accept(report);
-        }
-
         navigateBack();
-        }
+    }
 
     @FXML
     private void onCancel() {
@@ -285,5 +302,17 @@ public class ReportFormController implements Initializable {
         } catch (Exception ignored) {
         }
         return false;
+    }
+
+    private boolean isValidName(String value) {
+        return value.matches(NAME_PATTERN);
+    }
+
+    private boolean isValidStudentId(String value) {
+        return value.matches(STUDENT_ID_PATTERN);
+    }
+
+    private boolean isValidContactNumber(String value) {
+        return value.matches(CONTACT_PATTERN);
     }
 }

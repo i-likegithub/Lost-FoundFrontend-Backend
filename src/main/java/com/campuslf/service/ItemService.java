@@ -42,7 +42,17 @@ public class ItemService {
         return itemDAO.getAllItemReports("Claimed");
     }
 
+    public List<ItemReport> getVisibleItems(boolean includeClaimed) {
+        return includeClaimed
+                ? itemDAO.getAllItemReports(null)
+                : itemDAO.getAllItemReports("Unclaimed");
+    }
+
     public ItemReport getItemById(int reportId) {
         return itemDAO.getItemReportById(reportId);
+    }
+
+    public boolean markClaimed(int reportId) {
+        return itemDAO.updateReportStatus(reportId, "Claimed");
     }
 }

@@ -9,6 +9,7 @@ public class SessionManager {
     private static SessionManager instance;
     private Role currentRole;
     private String currentUsername;
+    private int currentAdminId;
 
     private SessionManager() {
     }
@@ -20,13 +21,19 @@ public class SessionManager {
     }
 
     public void login(Role role, String username) {
+        login(role, username, 0);
+    }
+
+    public void login(Role role, String username, int adminId) {
         this.currentRole = role;
         this.currentUsername = username;
+        this.currentAdminId = adminId;
     }
 
     public void logout() {
         this.currentRole = null;
         this.currentUsername = null;
+        this.currentAdminId = 0;
     }
 
     public Role getRole() {
@@ -35,6 +42,10 @@ public class SessionManager {
 
     public String getUsername() {
         return currentUsername;
+    }
+
+    public int getAdminId() {
+        return currentAdminId;
     }
 
     public boolean isAdmin() {

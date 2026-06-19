@@ -11,6 +11,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import com.campuslf.service.ItemService;
 import model.Item;
 import model.ItemStore;
 
@@ -24,6 +25,11 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 public class ClaimVerificationController implements Initializable {
+
+    private static final String NAME_PATTERN = "[A-Za-z .,]+";
+    private static final String STUDENT_ID_PATTERN = "\\d{4}-\\d{5}-SR-0";
+    private static final String CONTACT_PATTERN = "09\\d{2}-\\d{3}-\\d{4}";
+    private static final int MAX_COURSE_SECTION_LENGTH = 40;
 
     @FXML
     private ImageView logoImage;
@@ -45,6 +51,7 @@ public class ClaimVerificationController implements Initializable {
     private Label errorLabel;
 
     private Item item;
+    private final ItemService itemService = new ItemService();
     private final List<File> proofImages = new ArrayList<>();
     private NavbarHelper navbar;
 
@@ -88,21 +95,46 @@ public class ClaimVerificationController implements Initializable {
     @FXML
     private void onConfirmClaim() {
         errorLabel.setText("");
-        if (claimNameField.getText().isBlank()) {
+        String claimantName = claimNameField.getText().trim();
+        String studentId = studentIdField.getText().trim();
+        String contactNumber = contactField.getText().trim();
+        String courseSection = courseSectionField.getText().trim();
+
+        if (claimantName.isBlank()) {
             errorLabel.setText("Name is required.");
             return;
         }
-        if (contactField.getText().isBlank()) {
+        if (!isValidName(claimantName)) {
+            errorLabel.setText("Name can only contain letters, spaces, comma, and period.");
+            return;
+        }
+        if (!studentId.isBlank() && !isValidStudentId(studentId)) {
+            errorLabel.setText("Student ID must follow this format: 2023-00123-SR-0");
+            return;
+        }
+        if (contactNumber.isBlank()) {
             errorLabel.setText("Contact number is required.");
             return;
         }
-        if (courseSectionField.getText().isBlank()) {
+        if (!isValidContactNumber(contactNumber)) {
+            errorLabel.setText("Contact number must follow this format: 09XX-XXX-XXXX");
+            return;
+        }
+        if (courseSection.isBlank()) {
             errorLabel.setText("Course and Section is required.");
+            return;
+        }
+        if (courseSection.length() > MAX_COURSE_SECTION_LENGTH) {
+            errorLabel.setText("Course and Section must not exceed " + MAX_COURSE_SECTION_LENGTH + " characters.");
             return;
         }
 
         if (item != null) {
-            ItemStore.getInstance().markAsClaimed(item, claimNameField.getText().trim());
+            if (!itemService.markClaimed(item.getId())) {
+                errorLabel.setText("Unable to update item status.");
+                return;
+            }
+            ItemStore.getInstance().markAsClaimed(item, claimantName);
         }
 
         showConfirmAndGoBack();
@@ -169,5 +201,17 @@ public class ClaimVerificationController implements Initializable {
                 iv.setImage(new Image(url.toExternalForm(), true));
         } catch (Exception ignored) {
         }
+    }
+
+    private boolean isValidName(String value) {
+        return value.matches(NAME_PATTERN);
+    }
+
+    private boolean isValidStudentId(String value) {
+        return value.matches(STUDENT_ID_PATTERN);
+    }
+
+    private boolean isValidContactNumber(String value) {
+        return value.matches(CONTACT_PATTERN);
     }
 }

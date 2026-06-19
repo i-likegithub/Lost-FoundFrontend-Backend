@@ -86,8 +86,9 @@ public class ItemCardController implements Initializable {
             return;
         try {
             URL url = getClass().getResource(path);
-            if (url != null)
-                itemImage.setImage(new Image(url.toExternalForm(), true));
+            String uri = path.startsWith("file:") ? path : (url != null ? url.toExternalForm() : null);
+            if (uri != null)
+                itemImage.setImage(new Image(uri, true));
         } catch (Exception ignored) {
         }
     }

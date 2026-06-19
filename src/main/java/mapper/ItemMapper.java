@@ -8,6 +8,7 @@ public class ItemMapper {
 
         Item item = new Item();
 
+        item.setId(report.getReportId());
         item.setName(report.getItemName());
         item.setLocation(report.getLocationFound());
 
@@ -21,13 +22,11 @@ public class ItemMapper {
         item.setContactNumber(report.getFinderContactNum());
         item.setImagePath(report.getImageUrl());
 
-        // Temporarily store description as color
-        item.setColor(report.getDescription());
+        item.setColor(cleanDescription(report.getDescription()));
 
-        // Temporary category display
-        item.setCategory("Category #" + report.getCategoryId());
+        item.setCategory(categoryName(report.getCategoryId()));
 
-        item.setReporterName("Admin");
+        item.setReporterName(finderName(report.getDescription()));
 
         if ("Claimed".equalsIgnoreCase(report.getReportStatus())) {
             item.setStatus(Item.Status.FOUND);
@@ -36,5 +35,42 @@ public class ItemMapper {
         }
 
         return item;
+    }
+
+    private static String categoryName(int categoryId) {
+        return switch (categoryId) {
+            case 1 -> "Electronics";
+            case 2 -> "Bags & Wallets";
+            case 3 -> "IDs & Documents";
+            case 4 -> "Clothing";
+            default -> "Others";
+        };
+    }
+
+    private static String finderName(String description) {
+        if (description == null || !description.startsWith("Finder:")) {
+            return "";
+        }
+
+        int lineEnd = description.indexOf(System.lineSeparator());
+        if (lineEnd < 0) {
+            lineEnd = description.indexOf('\n');
+        }
+
+        String firstLine = lineEnd >= 0 ? description.substring(0, lineEnd) : description;
+        return firstLine.replaceFirst("Finder:\\s*", "").trim();
+    }
+
+    private static String cleanDescription(String description) {
+        if (description == null || !description.startsWith("Finder:")) {
+            return description;
+        }
+
+        int lineEnd = description.indexOf(System.lineSeparator());
+        if (lineEnd < 0) {
+            lineEnd = description.indexOf('\n');
+        }
+
+        return lineEnd >= 0 ? description.substring(lineEnd).trim() : "";
     }
 }

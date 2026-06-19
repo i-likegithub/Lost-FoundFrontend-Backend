@@ -70,9 +70,8 @@ public class DatabaseTest {
             claim.setClaimantStudentId("2023-67890");
             claim.setClaimantContact("09987654321");
             claim.setCourseSection("BSIT 3-2");
-            claim.setClaimStatus("Unclaimed");
+            claim.setClaimStatus("");
             claim.setDateClaimed(LocalDate.now());
-
             boolean claimAdded = claimDAO.addClaim(claim);
             System.out.println("Claim added: " + claimAdded);
         }

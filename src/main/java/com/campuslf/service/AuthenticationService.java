@@ -12,18 +12,16 @@ public class AuthenticationService {
     }
 
     public boolean login(String username, String password) {
+        return authenticate(username, password) != null;
+    }
 
-        Admin admin =
-                adminDAO.getAdminByUsername(username);
+    public Admin authenticate(String username, String password) {
+        Admin admin = adminDAO.getAdminByUsername(username);
+        return admin != null && admin.getPassword().equals(password) ? admin : null;
+    }
 
-        if (admin == null) {
-
-            return false;
-
-        } else {
-
-            return admin.getPassword().equals(password);
-        }
+    public Admin getAdmin(String username) {
+        return adminDAO.getAdminByUsername(username);
     }
 
     public boolean usernameExists(String username) {

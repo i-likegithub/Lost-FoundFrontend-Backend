@@ -25,9 +25,6 @@ public class CreateAdminAccountController implements Initializable {
 
     private final AuthenticationService authenticationService = new AuthenticationService();
 
-    @FXML
-    private TextField fullNameField;
-    @FXML
     private TextField usernameField;
     @FXML
     private PasswordField passwordField;
@@ -51,16 +48,10 @@ public class CreateAdminAccountController implements Initializable {
     private void onCreateAccount() {
         errorLabel.setText("");
 
-        String fullName = fullNameField.getText().trim();
         String username = usernameField.getText().trim();
         String password = passwordField.getText();
         String confirm = confirmPasswordField.getText();
 
-        // Validation
-        if (fullName.isEmpty()) {
-            errorLabel.setText("Full name is required.");
-            return;
-        }
         if (username.isEmpty()) {
             errorLabel.setText("Username is required.");
             return;
@@ -84,6 +75,10 @@ public class CreateAdminAccountController implements Initializable {
             return;
         }
 
+        if (!confirmLogoutWarning()) {
+            return;
+        }
+
         // Figure 3: system saves the information
         if (!authenticationService.createAdmin(username, password)) {
             errorLabel.setText("Unable to create account. Please try again.");
@@ -91,8 +86,9 @@ public class CreateAdminAccountController implements Initializable {
         }
 
         // Log in with new account immediately → access granted
-        SessionManager.getInstance().login(SessionManager.Role.ADMIN, username);
-        navigateToDashboard();
+        SessionManager.getInstance().logout();
+        showAccountCreatedMessage();
+        navigateTo("/fxml/AdminLogin.fxml", "Admin Login - PUPSRC Lost and Found");
     }
 
     @FXML

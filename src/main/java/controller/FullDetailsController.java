@@ -40,6 +40,8 @@ public class FullDetailsController implements Initializable {
     private TextField dateFoundField;
     @FXML
     private ComboBox<String> statusCombo;
+    @FXML
+    private Button claimBtn;
 
     private Item item;
     private NavbarHelper navbar;
@@ -67,6 +69,7 @@ public class FullDetailsController implements Initializable {
         studentIdField.setText(item.getStudentId() != null ? item.getStudentId() : "");
         contactField.setText(item.getContactNumber() != null ? item.getContactNumber() : "");
         loadItemImage(item.getImagePath());
+        updateClaimButtonState();
     }
 
     public void setDashboardController(DashboardController dc) {
@@ -75,6 +78,11 @@ public class FullDetailsController implements Initializable {
 
     @FXML
     private void onClaim() {
+        if (item == null || item.getStatus() == Item.Status.FOUND) {
+            showAlert("Already Claimed", "This item has already been claimed.");
+            return;
+        }
+
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ClaimVerification.fxml"));
             Parent root = loader.load();
@@ -113,6 +121,20 @@ public class FullDetailsController implements Initializable {
         dateFoundField.setEditable(false);
         categoryCombo.setDisable(true);
         statusCombo.setDisable(true);
+    }
+
+    private void updateClaimButtonState() {
+        boolean alreadyClaimed = item != null && item.getStatus() == Item.Status.FOUND;
+        claimBtn.setDisable(alreadyClaimed);
+        claimBtn.setText(alreadyClaimed ? "CLAIMED" : "CLAIM");
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     private void navigateBack() {
