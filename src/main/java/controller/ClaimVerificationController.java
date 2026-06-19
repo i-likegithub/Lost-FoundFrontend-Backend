@@ -11,9 +11,11 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import com.campuslf.service.ActivityLogService;
 import com.campuslf.service.ItemService;
 import model.Item;
 import model.ItemStore;
+import model.SessionManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,6 +54,7 @@ public class ClaimVerificationController implements Initializable {
 
     private Item item;
     private final ItemService itemService = new ItemService();
+    private final ActivityLogService activityLogService = new ActivityLogService();
     private final List<File> proofImages = new ArrayList<>();
     private NavbarHelper navbar;
 
@@ -134,6 +137,9 @@ public class ClaimVerificationController implements Initializable {
                 errorLabel.setText("Unable to update item status.");
                 return;
             }
+            activityLogService.logAction(
+                    Math.max(1, SessionManager.getInstance().getAdminId()),
+                    "Claimed item: " + item.getName() + " by " + claimantName);
             ItemStore.getInstance().markAsClaimed(item, claimantName);
         }
 

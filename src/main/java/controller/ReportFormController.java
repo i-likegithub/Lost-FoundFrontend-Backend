@@ -13,6 +13,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import com.campuslf.models.ItemReport;
+import com.campuslf.service.ActivityLogService;
 import com.campuslf.service.ItemService;
 import model.SessionManager;
 
@@ -70,6 +71,7 @@ public class ReportFormController implements Initializable {
     private Label errorLabel;
 
     private final ItemService itemService = new ItemService();
+    private final ActivityLogService activityLogService = new ActivityLogService();
     private final List<File> uploadedImages = new ArrayList<>();
     private NavbarHelper navbar;
 
@@ -262,6 +264,10 @@ public class ReportFormController implements Initializable {
 
             return;
         }
+
+        activityLogService.logAction(
+                Math.max(1, SessionManager.getInstance().getAdminId()),
+                "Posted new unclaimed item: " + itemName);
 
         navigateBack();
     }

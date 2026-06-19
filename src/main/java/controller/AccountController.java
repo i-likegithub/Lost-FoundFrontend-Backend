@@ -3,6 +3,7 @@ package controller;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
@@ -17,12 +18,16 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import com.campuslf.models.ActivityLog;
+import com.campuslf.service.ActivityLogService;
 import model.ProfileStore;
 import model.SessionManager;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
@@ -68,6 +73,9 @@ public class AccountController implements Initializable {
     private ScrollPane historyScrollPane;
 
     private NavbarHelper navbar;
+    private final ActivityLogService activityLogService = new ActivityLogService();
+    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("hh:mm a");
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("MM / dd / yyyy");
 
     // ── Initialise ────────────────────────────────────────────
 
@@ -102,7 +110,6 @@ public class AccountController implements Initializable {
         // Admin-only actions
         boolean adminVisible = isAdmin;
 
-        // Build history entries
         buildHistory();
     }
 
@@ -317,7 +324,9 @@ public class AccountController implements Initializable {
         dlg.setContentText(
                 "Password change feature coming soon.\n\nFor now, manage passwords through the Create Admin Account screen.");
         dlg.showAndWait();
-        ProfileStore.getInstance().recordEvent("Change Password");
+        activityLogService.logAction(
+                Math.max(1, SessionManager.getInstance().getAdminId()),
+                "Opened change password");
         buildHistory();
     }
 
@@ -339,23 +348,52 @@ public class AccountController implements Initializable {
 
     private void buildHistory() {
         historyList.getChildren().clear();
-        for (ProfileStore.HistoryEntry entry : ProfileStore.getInstance().getHistory()) {
-            historyList.getChildren().add(buildHistoryCard(entry));
-        }
+        historyList.getChildren().add(new Label("Loading history..."));
+
+        Task<List<ActivityLog>> task = new Task<>() {
+            @Override
+            protected List<ActivityLog> call() {
+                return activityLogService.getAllLogs();
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            historyList.getChildren().clear();
+            List<ActivityLog> logs = task.getValue();
+            if (logs.isEmpty()) {
+                historyList.getChildren().add(new Label("No activity yet."));
+                return;
+            }
+
+            for (ActivityLog log : logs) {
+                historyList.getChildren().add(buildHistoryCard(log));
+            }
+        });
+
+        task.setOnFailed(event -> {
+            historyList.getChildren().clear();
+            historyList.getChildren().add(new Label("Unable to load history."));
+        });
+
+        Thread historyThread = new Thread(task, "activity-log-loader");
+        historyThread.setDaemon(true);
+        historyThread.start();
     }
 
-    private VBox buildHistoryCard(ProfileStore.HistoryEntry entry) {
+    private VBox buildHistoryCard(ActivityLog entry) {
         VBox card = new VBox(2);
         card.getStyleClass().add("history-card");
         card.setPadding(new Insets(12, 16, 12, 16));
 
-        Label title = new Label(entry.title());
+        Label title = new Label(entry.getActivity());
         title.getStyleClass().add("history-card-title");
 
-        Label time = new Label(entry.time());
+        String timeText = entry.getTimestamp() == null ? "" : entry.getTimestamp().format(TIME_FMT);
+        Label time = new Label(timeText);
         time.getStyleClass().add("history-card-sub");
 
-        Label date = new Label(entry.date());
+        String dateText = entry.getTimestamp() == null ? "" : entry.getTimestamp().format(DATE_FMT);
+        Label date = new Label(dateText);
         date.getStyleClass().add("history-card-sub");
 
         card.getChildren().addAll(title, time, date);

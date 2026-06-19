@@ -6,8 +6,12 @@ import com.campuslf.models.ActivityLog;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ActivityLogDAO {
+
+    private static final Logger LOGGER = Logger.getLogger(ActivityLogDAO.class.getName());
 
     public boolean addLog(int adminId, String activity) {
         String sql = "INSERT INTO activity_logs (admin_id, activity) VALUES (?, ?)";
@@ -18,14 +22,18 @@ public class ActivityLogDAO {
             pstmt.setString(2, activity);
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Failed to add activity log", e);
             return false;
         }
     }
 
     public List<ActivityLog> getAllLogs() {
         List<ActivityLog> logs = new ArrayList<>();
-        String sql = "SELECT * FROM activity_logs ORDER BY timestamp DESC";
+        String sql = """
+                SELECT log_id, admin_id, activity, timestamp
+                FROM activity_logs
+                ORDER BY timestamp DESC
+                """;
         try (Connection conn = DatabaseConnection.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -47,7 +55,7 @@ public class ActivityLogDAO {
                 logs.add(log);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Failed to load activity logs", e);
         }
         return logs;
     }

@@ -96,6 +96,30 @@ public class CreateAdminAccountController implements Initializable {
         navigateTo("/fxml/AdminLogin.fxml", "Admin Login – PUPSRC Lost and Found");
     }
 
+    @FXML
+    private void onHome() {
+        SessionManager.getInstance().logout();
+        navigateTo("/fxml/Login.fxml", "PUPSRC Lost and Found");
+    }
+
+    private boolean confirmLogoutWarning() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Create Admin Account");
+        alert.setHeaderText("You will be logged out after creating this account.");
+        alert.setContentText("Continue creating the admin account?");
+        return alert.showAndWait()
+                .filter(ButtonType.OK::equals)
+                .isPresent();
+    }
+
+    private void showAccountCreatedMessage() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Account Created");
+        alert.setHeaderText(null);
+        alert.setContentText("Admin account created. Please log in again.");
+        alert.showAndWait();
+    }
+
     private void navigateToDashboard() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/Dashboard.fxml"));

@@ -38,6 +38,8 @@
                     maxWidth="Infinity" />
                 <Button text="CREATE ACCOUNT" styleClass="btn-view" maxWidth="Infinity"
                     onAction="#onCreateAccount" />
+                <Button text="HOME" styleClass="btn-cancel" maxWidth="Infinity"
+                    onAction="#onHome" />
                 <HBox alignment="CENTER" spacing="4">
                     <Label text="Already have an account?" styleClass="forgot-text" />
                     <Hyperlink text="Log in here" styleClass="forgot-link" onAction="#onBackToLogin" />

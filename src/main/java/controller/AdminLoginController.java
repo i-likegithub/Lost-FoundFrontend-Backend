@@ -1,6 +1,7 @@
 package controller;
 
 import com.campuslf.models.Admin;
+import com.campuslf.service.ActivityLogService;
 import com.campuslf.service.AuthenticationService;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -28,6 +29,7 @@ import java.util.ResourceBundle;
 public class AdminLoginController implements Initializable {
 
     private final AuthenticationService authenticationService = new AuthenticationService();
+    private final ActivityLogService activityLogService = new ActivityLogService();
 
     @FXML
     private TextField usernameField;
@@ -73,6 +75,9 @@ public class AdminLoginController implements Initializable {
                 SessionManager.Role.ADMIN,
                 user,
                 admin != null ? admin.getAdminId() : 0);
+        activityLogService.logAction(
+                Math.max(1, SessionManager.getInstance().getAdminId()),
+                "Admin logged in: " + user);
         navigateToDashboard();
     }
 

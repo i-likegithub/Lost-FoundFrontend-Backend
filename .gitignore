@@ -53,6 +53,7 @@ target/
 *.log
 
 # Sensitive configuration (if you create one)
+.env
 config.properties
 application.properties
 
